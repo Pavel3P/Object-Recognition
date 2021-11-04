@@ -15,7 +15,7 @@ class NormalPerceptron:
     dims: int
 
     def __init__(self, learning_rate: float = 1) -> None:
-        self.learning_rate = learning_rate
+        self.learning_rate: float = learning_rate
 
     def train(self, X: np.ndarray, Y: np.ndarray) -> None:
         self.dims = X.shape[1]
@@ -44,11 +44,15 @@ class NormalPerceptron:
                     stop_train = False
                     break
 
+            # Calculate new distribution params
             self.location, self.covariance = self.__get_distribution_params()
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         X = self.__preprocess_data(X)
 
+        return self.__predict(X)
+
+    def __predict(self, X: np.ndarray) -> np.ndarray:
         predictions: np.ndarray = X @ self.weights
         predictions[predictions > 0] = 1
         predictions[predictions < 0] = -1
@@ -65,7 +69,7 @@ class NormalPerceptron:
 
     def __get_weights(self) -> np.ndarray:
         return np.concatenate([
-            [self.c],
+            [np.log(2 * np.pi) * self.dims],
             -2 * np.linalg.inv(self.covariance) @ self.location,
             np.concatenate(np.linalg.inv(self.covariance))
         ])
