@@ -29,23 +29,22 @@ class NormalPerceptron:
         preprocessed_x = self.__preprocess_data(X)
 
         # Get initial accuracy score
-        predictions: np.ndarray = self.predict(X)
-        accuracy: float = accuracy_score(Y, predictions)
-        while accuracy < 1:
+        stop_train: bool = False
+        while not stop_train:
+            stop_train = True
+
+            # Add eigenvectors constraint
             eig_vectors: np.ndarray = self.__preprocess_eig_vectors()
             new_x = np.vstack([preprocessed_x, eig_vectors])
             new_y = np.concatenate([Y, np.ones(len(eig_vectors))])
 
-            for i in np.random.choice(np.arange(len(new_x)), len(new_x), False):
-                x = new_x[i]
-                y = new_y[i]
-
-                if y * x @ self.weights < 0:
+            for x, y in zip(new_x, new_y):
+                if y * x @ self.weights <= 0:
                     self.weights = self.weights + y * self.learning_rate * x
+                    stop_train = False
+                    break
 
             self.location, self.covariance = self.__get_distribution_params()
-            predictions = self.predict(X)
-            accuracy = accuracy_score(Y, predictions)
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         X = self.__preprocess_data(X)
