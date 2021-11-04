@@ -9,19 +9,20 @@ class NormalPerceptron:
     of multivariate normal distribution.
     """
 
-    c: float
     location: np.ndarray
     covariance: np.ndarray
     weights: np.ndarray
+    dims: int
 
     def __init__(self, learning_rate: float = 1) -> None:
         self.learning_rate = learning_rate
 
     def train(self, X: np.ndarray, Y: np.ndarray) -> None:
+        self.dims = X.shape[1]
+
         # Initialize distribution params
-        self.c = (2 * np.pi) ** (-X.shape[1] / 2)
-        self.covariance = np.eye(X.shape[1])
-        self.location = np.zeros(X.shape[1])
+        self.covariance = np.eye(self.dims)
+        self.location = np.zeros(self.dims)
         self.weights = self.__get_weights()
 
         # Data preprocessing
@@ -60,7 +61,7 @@ class NormalPerceptron:
         eig_vects = eig_vects.T
         eig_vects = eig_vects[eig_vals <= 0]
         eig_vects = self.__preprocess_data(eig_vects)
-        eig_vects[:, :(len(self.location) + 1)] = 0
+        eig_vects[:, :self.dims+1] = 0
 
         return eig_vects
 
@@ -72,9 +73,8 @@ class NormalPerceptron:
         ])
 
     def __get_distribution_params(self) -> tuple[np.ndarray, np.ndarray]:
-        size: int = len(self.location)
-        covariance: np.ndarray = np.linalg.inv(self.weights[size+1:].reshape((size, size)))
-        location: np.ndarray = covariance @ self.weights[1:size+1] / (-2)
+        covariance: np.ndarray = np.linalg.inv(self.weights[self.dims+1:].reshape((self.dims, self.dims)))
+        location: np.ndarray = covariance @ self.weights[1:self.dims+1] / (-2)
 
         return location, covariance
 
