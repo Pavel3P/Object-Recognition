@@ -58,7 +58,6 @@ class NormalPerceptron:
     def __preprocess_eig_vectors(self) -> np.ndarray:
         eig_vals, eig_vects = np.linalg.eig(np.linalg.inv(self.covariance))
         eig_vects = eig_vects.T
-        eig_vects = eig_vects[eig_vals <= 0]
         eig_vects = self.__preprocess_data(eig_vects)
         eig_vects[:, :self.dims+1] = 0
 
