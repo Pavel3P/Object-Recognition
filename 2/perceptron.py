@@ -20,10 +20,7 @@ class NormalPerceptron:
     def train(self, X: np.ndarray, Y: np.ndarray) -> None:
         self.dims = X.shape[1]
 
-        # Initialize distribution params
-        self.covariance = np.eye(self.dims)
-        self.location = np.zeros(self.dims)
-        self.weights = self.__get_weights()
+        self.weights = np.zeros(self.dims ** 2 + self.dims + 1)
 
         # Data preprocessing
         preprocessed_x = self.__preprocess_data(X)
@@ -62,13 +59,6 @@ class NormalPerceptron:
         eig_vects[:, :self.dims+1] = 0
 
         return eig_vects
-
-    def __get_weights(self) -> np.ndarray:
-        return np.concatenate([
-            [-np.log(2 * np.pi) * self.dims],
-            2 * np.linalg.inv(self.covariance) @ self.location,
-            -np.concatenate(np.linalg.inv(self.covariance))
-        ])
 
     def __get_distribution_params(self) -> tuple[np.ndarray, np.ndarray]:
         covariance: np.ndarray = -np.linalg.inv(self.weights[self.dims+1:].reshape((self.dims, self.dims)))
