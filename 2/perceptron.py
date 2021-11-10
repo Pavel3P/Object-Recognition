@@ -36,7 +36,7 @@ class NormalPerceptron:
             # Add eigenvectors constraint
             eig_vectors: np.ndarray = self.__preprocess_eig_vectors()
             new_x = np.vstack([preprocessed_x, eig_vectors])
-            new_y = np.concatenate([Y, np.ones(len(eig_vectors))])
+            new_y = np.concatenate([Y, -np.ones(len(eig_vectors))])
 
             for x, y in zip(new_x, new_y):
                 if y * x @ self.weights <= 0:
@@ -44,8 +44,8 @@ class NormalPerceptron:
                     stop_train = False
                     break
 
-            # Calculate new distribution params
-            self.location, self.covariance = self.__get_distribution_params()
+        # Calculate new distribution params
+        self.location, self.covariance = self.__get_distribution_params()
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         X = self.__preprocess_data(X)
@@ -53,14 +53,10 @@ class NormalPerceptron:
         return self.__predict(X)
 
     def __predict(self, X: np.ndarray) -> np.ndarray:
-        predictions: np.ndarray = X @ self.weights
-        predictions[predictions > 0] = 1
-        predictions[predictions < 0] = -1
-
-        return predictions
+        return np.sign(X @ self.weights)
 
     def __preprocess_eig_vectors(self) -> np.ndarray:
-        eig_vals, eig_vects = np.linalg.eig(np.linalg.inv(self.covariance))
+        eig_vals, eig_vects = np.linalg.eig(-self.weights[self.dims+1:].reshape((self.dims, self.dims)))
         eig_vects = eig_vects.T
         eig_vects = self.__preprocess_data(eig_vects)
         eig_vects[:, :self.dims+1] = 0
@@ -69,14 +65,14 @@ class NormalPerceptron:
 
     def __get_weights(self) -> np.ndarray:
         return np.concatenate([
-            [np.log(2 * np.pi) * self.dims],
-            -2 * np.linalg.inv(self.covariance) @ self.location,
-            np.concatenate(np.linalg.inv(self.covariance))
+            [-np.log(2 * np.pi) * self.dims],
+            2 * np.linalg.inv(self.covariance) @ self.location,
+            -np.concatenate(np.linalg.inv(self.covariance))
         ])
 
     def __get_distribution_params(self) -> tuple[np.ndarray, np.ndarray]:
-        covariance: np.ndarray = np.linalg.inv(self.weights[self.dims+1:].reshape((self.dims, self.dims)))
-        location: np.ndarray = covariance @ self.weights[1:self.dims+1] / (-2)
+        covariance: np.ndarray = -np.linalg.inv(self.weights[self.dims+1:].reshape((self.dims, self.dims)))
+        location: np.ndarray = covariance @ self.weights[1:self.dims+1] / 2
 
         return location, covariance
 
