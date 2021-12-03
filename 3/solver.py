@@ -1,4 +1,6 @@
 from typing import Generator
+from copy import deepcopy
+from random import randint, shuffle
 
 
 class Connections:
@@ -128,6 +130,16 @@ class SudokuSolver:
         return row, column
 
     def __traverse_solution_tree(self, cell: int = 0, picked_values: list[int] = None) -> Generator[list[int], None, None]:
+        """
+        Return generator of found solutions.
+
+        :param cell: number of current cell (initially equal to 0,
+                     which means, that we always start from first
+                     cell)
+        :param picked_values: values of each cell, that have been picked
+                              up on current solution
+        :return: generator of solutions.
+        """
         if picked_values is None:
             picked_values = []
 
@@ -151,7 +163,7 @@ class SudokuSolver:
             solution = [val + 1 for val in solution]
             yield self.__reshape_to_2d(solution)
 
-    def solve(self) -> Generator[list[list[int]], None, None]:
+    def __remove_inconsistent_connections(self) -> None:
         queue = []
 
         for cell in range(self.size ** 2):
@@ -169,5 +181,37 @@ class SudokuSolver:
             for changed_state in changed_states:
                 if not self.__connections.is_state_possible(*changed_state) and changed_state not in queue:
                     queue.append(changed_state)
+
+    def solve(self) -> list[list[int]]:
+        self.__remove_inconsistent_connections()
+
+        old_connections = deepcopy(self.__connections)
+        cells = list(range(self.size ** 2))
+        shuffle(cells)
+        for cell in cells:
+            poss_states = self.__connections.cell_possible_states(cell)
+            if len(poss_states) > 1:
+                picked_state = randint(0, len(poss_states))
+
+                for state in poss_states[:picked_state] + poss_states[picked_state+1:]:
+                    self.__connections.remove_state(cell, state)
+
+                try:
+                    return self.solve()
+                except Exception:
+                    self.__connections = deepcopy(old_connections)
+                    continue
+
+        if not all([len(self.__connections.cell_possible_states(c)) == 1 for c in range(self.size ** 2)]):
+            raise ValueError("Sudoku could not be solved.")
+        else:
+            flatten = []
+            for cell in range(self.size ** 2):
+                flatten.append(self.__connections.cell_possible_states(cell)[0] + 1)
+
+            return self.__reshape_to_2d(flatten)
+
+    def find_all_solutions(self) -> Generator[list[list[int]], None, None]:
+        self.__remove_inconsistent_connections()
 
         return self.__generate_solutions()
