@@ -76,7 +76,7 @@ class Connections:
 class SudokuSolver:
     def __init__(self, init_state: list[list[int]]) -> None:
         self.size: int = len(init_state)
-        self.init_state = init_state
+        self.init_state = deepcopy(init_state)
         self.__connections = self.__init_cells()
 
     def __init_cells(self) -> Connections:
@@ -199,7 +199,7 @@ class SudokuSolver:
                 try:
                     return self.solve()
                 except Exception:
-                    self.__connections = deepcopy(old_connections)
+                    self.__connections = old_connections
                     continue
 
         if not all([len(self.__connections.cell_possible_states(c)) == 1 for c in range(self.size ** 2)]):
