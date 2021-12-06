@@ -1,6 +1,5 @@
 from typing import Generator
 from copy import deepcopy
-from random import randint, shuffle
 
 
 class Connections:
@@ -182,34 +181,37 @@ class SudokuSolver:
                 if not self.__connections.is_state_possible(*changed_state) and changed_state not in queue:
                     queue.append(changed_state)
 
-    def solve(self) -> list[list[int]]:
-        self.__remove_inconsistent_connections()
-
-        old_connections = deepcopy(self.__connections)
-        cells = list(range(self.size ** 2))
-        shuffle(cells)
-        for cell in cells:
+    def __self_control(self) -> None:
+        for cell in range(self.size ** 2):
             poss_states = self.__connections.cell_possible_states(cell)
             if len(poss_states) > 1:
-                picked_state = randint(0, len(poss_states))
+                old_connections = deepcopy(self.__connections)
+                exist_polymorphism = False
 
-                for state in poss_states[:picked_state] + poss_states[picked_state+1:]:
-                    self.__connections.remove_state(cell, state)
+                for picked_state in range(len(poss_states)):
+                    for state in poss_states[:picked_state] + poss_states[picked_state + 1:]:
+                        self.__connections.remove_state(cell, state)
 
-                try:
-                    return self.solve()
-                except Exception:
-                    self.__connections = old_connections
-                    continue
+                    try:
+                        self.__remove_inconsistent_connections()
+                        exist_polymorphism = True
+                        break
+                    except Exception:
+                        self.__connections = deepcopy(old_connections)
+                        continue
 
-        if not all([len(self.__connections.cell_possible_states(c)) == 1 for c in range(self.size ** 2)]):
-            raise ValueError("Sudoku could not be solved.")
-        else:
-            flatten = []
-            for cell in range(self.size ** 2):
-                flatten.append(self.__connections.cell_possible_states(cell)[0] + 1)
+                if not exist_polymorphism:
+                    raise ValueError("No polymorphism.")
 
-            return self.__reshape_to_2d(flatten)
+    def solve(self) -> list[list[int]]:
+        self.__remove_inconsistent_connections()
+        self.__self_control()
+
+        flatten = []
+        for cell in range(self.size ** 2):
+            flatten.append(self.__connections.cell_possible_states(cell)[0] + 1)
+
+        return self.__reshape_to_2d(flatten)
 
     def find_all_solutions(self) -> Generator[list[list[int]], None, None]:
         self.__remove_inconsistent_connections()
