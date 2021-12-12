@@ -1,5 +1,9 @@
 import numpy as np
-import cv2
+from tqdm import trange
+
+
+# TODO add tests
+# TODO add threading
 
 
 class Chain:
@@ -30,12 +34,25 @@ class Composer:
                  images: list[np.ndarray],
                  masks: list[np.ndarray],
                  alpha: float = 1,
-                 beta: float = 1) -> None:
+                 beta: float = 1
+                 ) -> None:
 
-        self.images = images,
-        self.masks = masks
+        self.images = np.vstack(images),
+        self.masks = np.vstack([m.astype(bool) for m in masks])
         self.alpha = alpha
         self.beta = beta
 
     def compose(self) -> np.ndarray:
-        raise NotImplementedError
+        res: list[np.ndarray] = []
+        for i in trange(self.images[0].shape[0]):
+            # ch = Chain(self.images[:, i], self.masks[:, i])
+            # line = ch.compose()
+            # del ch
+            # res.append(line)
+            res.append(
+                Chain(self.images[:, i], self.masks[:, i]).compose()
+            )
+
+        return np.array(res)
+
+
