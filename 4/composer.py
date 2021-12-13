@@ -1,8 +1,10 @@
 import numpy as np
-import cv2
-from tqdm import tqdm, trange
-import threading
-import os
+from tqdm import trange
+
+
+# TODO add tests
+# TODO add threading
+
 
 class Chain:
     def __init__(self,
@@ -26,11 +28,6 @@ class Chain:
     def compose(self) -> np.ndarray:
         raise NotImplementedError
 
-# TODO add row looping and saving
-# TODO add tests
-# TODO add threading
-# TODO add mask and photos reading
-
 
 class Composer:
     def __init__(self,
@@ -46,30 +43,16 @@ class Composer:
         self.beta = beta
 
     def compose(self) -> np.ndarray:
-        res = []
+        res: list[np.ndarray] = []
         for i in trange(self.images[0].shape[0]):
+            # ch = Chain(self.images[:, i], self.masks[:, i])
+            # line = ch.compose()
+            # del ch
+            # res.append(line)
             res.append(
-                Chain(self.images[:, i], self.masks[:, i])
+                Chain(self.images[:, i], self.masks[:, i]).compose()
             )
+
         return np.array(res)
 
 
-def test(path_to_folder, alpha=1, beta=1):
-    imgs = []
-    masks = []
-    for f in os.listdir(path_to_folder):
-        f = path_to_folder + f
-        if 'image' in f:
-            imgs.append(f)
-        elif 'mask' in f:
-            masks.append(f)
-    imgs.sort()
-    masks.sort()
-    imgs = [cv2.imread(f) for f in imgs]
-    masks = [cv2.imread(f, cv2.IMREAD_GRAYSCALE).astype(bool) for f in masks]
-
-    return imgs, masks
-
-
-if __name__=='__main__':
-    test('4/data_hometask_4/')
