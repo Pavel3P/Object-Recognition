@@ -6,8 +6,16 @@ import time
 from composer import Composer
 
 
-def memoize(func: callable, *args, **kwargs) -> callable:
-    raise NotImplementedError
+def memoize(func: callable) -> callable:
+    cache = {}
+
+    def memoized(*args):
+        if args not in cache:
+            cache[args] = func(*args)
+
+        return cache[args]
+
+    return memoized
 
 
 def preprocess(path_to_folder: str = '4/data_hometask_4/',
