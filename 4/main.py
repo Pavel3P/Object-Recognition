@@ -21,5 +21,5 @@ if __name__ == '__main__':
         main()
     else:
         main(
-            sys.argv[1], sys.argv[2], 1, 1
+            sys.argv[1], sys.argv[2], float(sys.argv[3]), float(sys.argv[4])
         )
