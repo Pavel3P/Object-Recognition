@@ -44,13 +44,3 @@ def preprocess(path_to_folder: str = '4/data_hometask_4/',
 def save_img(filename: str, img: np.ndarray):
     cv2.imwrite(filename, img)
 
-
-def main(path_to_folder: str = '4/data_hometask_4/',
-         result_filename: str = '4/data_hometask_4/result.png',
-         alpha: float = 1,
-         beta: float = 1):
-    t1 = time.time()
-    imgs, masks = preprocess(path_to_folder)
-    ans = Composer(imgs, masks).compose()
-    save_img(result_filename, ans)
-    print(f'Total executing time: {time.time() - t1}')
