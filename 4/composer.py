@@ -1,81 +1,4 @@
 import numpy as np
-from misc import memoize
-from tqdm import trange
-
-
-# TODO add tests
-# TODO add threading
-
-
-class Chain:
-    def __init__(self,
-                 img_chains: np.ndarray,
-                 msk_chains: np.ndarray,
-                 alpha: float = 1,
-                 beta: float = 1
-                 ) -> None:
-
-        self.alpha = alpha
-        self.beta = beta
-        self.img_chains = img_chains
-        self.msk_chains = msk_chains
-
-        self.__weights = self.alpha * (1 - self.msk_chains)
-        self.__class_num = img_chains.shape[0]
-        self.__pts_num = self.img_chains.shape[1]
-
-    def point_weight(self,
-                     idx: int,
-                     k: int) -> float:
-        if idx >= self.__pts_num or k >= self.__class_num or idx == -1 or k == -1:
-            return np.inf
-
-        return self.__weights[k, idx]
-
-    @memoize
-    def edge_weight(self,
-                    idx1: int,
-                    idx2: int,
-                    k1: int,
-                    k2: int) -> float:
-        if abs(idx1 - idx2) != 1 and (idx1 < 0 or idx2 < 0):
-            return np.inf
-
-        return self.beta * (np.sum(np.abs(self.img_chains[k1, idx1] - self.img_chains[k2, idx1])) +
-                            np.sum(np.abs(self.img_chains[k1, idx2] - self.img_chains[k2, idx2])))
-
-    def compose(self) -> np.ndarray:
-        _, labels = self.__f()
-
-        return np.array([self.img_chains[labels[i], i] for i in range(self.__pts_num)])
-
-    @memoize
-    def __f(self, idx: int = 0, k: int = -1) -> tuple[float, list[int]]:
-        if idx >= self.__pts_num or k >= self.__class_num:
-            return 0, []
-
-        if k == -1:
-            k_range = range(self.__class_num)
-        else:
-            k_range = [k]
-
-        k_min_val = np.inf
-        best_labels = []
-        for k in k_range:
-            k_next_min_val = np.inf
-            best_next_labels = []
-            for k_next in range(self.__class_num):
-                f_next, next_labels = self.__f(idx+1, k_next)
-                val = self.point_weight(idx+1, k+1) + self.edge_weight(idx, idx+1, k, k_next) + f_next
-                if val < k_next_min_val:
-                    best_next_labels = next_labels
-                    k_next_min_val = val
-
-            if k_next_min_val < k_min_val:
-                best_labels = [k] + best_next_labels
-                k_min_val = k_next_min_val
-
-        return k_min_val, best_labels
 
 
 class Composer:
@@ -86,22 +9,49 @@ class Composer:
                  beta: float = 1
                  ) -> None:
 
-        self.images = np.vstack(images),
-        self.masks = np.vstack([m.astype(bool) for m in masks])
+        self.images = np.array(images) / 255
+        self.masks = np.array(masks)
         self.alpha = alpha
         self.beta = beta
 
+        self.class_num = int(self.images.shape[0])
+        self.height = int(self.images.shape[1])
+        self.width = int(self.images.shape[2])
+
+        self.__point_weights = self.__get_points_weights()
+        self.__edges_weights = self.__get_edges_weights()
+        self.__f = self.__get_f()
+
+    def __get_points_weights(self) -> np.ndarray:
+        point_weights = np.zeros((self.class_num, self.height, self.width+1))
+        point_weights[:, :, :-1] = self.alpha * ~self.masks
+        return point_weights
+
+    def __get_edges_weights(self) -> np.ndarray:
+        edge_weights = np.zeros(
+            (self.class_num, self.class_num, self.height, self.width)
+        )
+        for k1 in range(self.class_num):
+            for k2 in range(self.class_num):
+                diff = np.linalg.norm(
+                    self.images[k1] - self.images[k2], axis=2, ord=1
+                )
+                edge_weights[k1, k2, :, :-1] = self.beta * (diff[:, :-1] + diff[:, 1:])
+        return edge_weights
+
+    def __get_f(self) -> np.ndarray:
+        f = np.zeros((self.class_num, self.height, self.width + 1))
+        for w in range(self.width - 1, -1, -1):
+            for k in range(self.class_num):
+                f[k, :, w] = np.min(self.__point_weights[:, :, w + 1] + self.__edges_weights[k, :, :, w] + f[:, :, w + 1], axis=0)
+
+        return f
+
     def compose(self) -> np.ndarray:
-        res: list[np.ndarray] = []
-        for i in trange(self.images[0].shape[0]):
-            # ch = Chain(self.images[:, i], self.masks[:, i])
-            # line = ch.compose()
-            # del ch
-            # res.append(line)
-            res.append(
-                Chain(self.images[:, i], self.masks[:, i]).compose()
-            )
+        labels = np.argmin(self.__f, axis=0)
+        image = np.zeros((self.height, self.width, self.images.shape[-1]))
+        for h in range(self.height):
+            for w in range(self.width):
+                image[h, w, :] = self.images[labels[h, w], h, w, :]
 
-        return np.array(res)
-
-
+        return image * 255
