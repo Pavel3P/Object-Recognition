@@ -9,7 +9,7 @@ class Composer:
                  beta: float = 1
                  ) -> None:
 
-        self.images = np.array(images),
+        self.images = np.array(images)
         self.masks = np.array(masks)
         self.alpha = alpha
         self.beta = beta
@@ -55,4 +55,3 @@ class Composer:
                 image[h, w, :] = self.images[labels[h, w], h, w, :]
 
         return image
-
