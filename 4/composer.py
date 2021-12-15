@@ -18,6 +18,10 @@ class Composer:
         self.height = int(self.images.shape[1])
         self.width = int(self.images.shape[2])
 
+        self.__point_weights = self.__get_points_weights()
+        self.__edges_weights = self.__get_edges_weights()
+        self.__f = self.__get_f()
+
     def __get_points_weights(self) -> np.ndarray:
         point_weights = np.zeros((self.class_num, self.height, self.width+1))
         point_weights[:, :, :-1] = self.alpha * (1 - self.masks)
@@ -36,8 +40,19 @@ class Composer:
         return edge_weights
 
     def __get_f(self) -> np.ndarray:
-        raise NotImplementedError
+        f = np.zeros((self.class_num, self.height, self.width + 1))
+        for w in range(self.width - 1, -1, -1):
+            for k in range(self.class_num):
+                f[k, :, w] = np.min(self.__point_weights[:, :, w + 1] + self.__edges_weights[k, :, :, w] + f[:, :, w + 1], axis=0)
+
+        return f
 
     def compose(self) -> np.ndarray:
-        raise NotImplementedError
+        labels = np.argmin(self.__f, axis=0)
+        image = np.zeros((self.height, self.width, self.images.shape[-1]))
+        for h in range(self.height):
+            for w in range(self.width):
+                image[h, w, :] = self.images[labels[h, w], h, w, :]
+
+        return image
 
