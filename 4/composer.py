@@ -9,7 +9,7 @@ class Composer:
                  beta: float = 1
                  ) -> None:
 
-        self.images = np.array(images)
+        self.images = np.array(images) / 255
         self.masks = np.array(masks)
         self.alpha = alpha
         self.beta = beta
@@ -24,7 +24,7 @@ class Composer:
 
     def __get_points_weights(self) -> np.ndarray:
         point_weights = np.zeros((self.class_num, self.height, self.width+1))
-        point_weights[:, :, :-1] = self.alpha * (1 - self.masks)
+        point_weights[:, :, :-1] = self.alpha * ~self.masks
         return point_weights
 
     def __get_edges_weights(self) -> np.ndarray:
@@ -54,4 +54,4 @@ class Composer:
             for w in range(self.width):
                 image[h, w, :] = self.images[labels[h, w], h, w, :]
 
-        return image
+        return image * 255
