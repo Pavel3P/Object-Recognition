@@ -1,10 +1,10 @@
 import unittest
 import time
-from composer import Composer
-from misc import preprocess, save_img
+from HW4.composer import Composer
+from HW4.misc import preprocess, save_img
 
 
-test_dir = 'data/'
+test_dir = 'HW4/data/'
 imgs, masks = preprocess(test_dir)
 
 
