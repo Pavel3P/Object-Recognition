@@ -1,5 +1,5 @@
 class Rules:
-    def __init__(self, rules: str):
+    def __init__(self):
         self.__gh: list[tuple[str, str, str]] = []
 
         self.__gv: list[tuple[str, str, str]] = []
