@@ -50,7 +50,7 @@ def generate_test_samples(
 
         assert len(l_b) == len(r_b) == len(c_b)
 
-        img = construct_image(one, zero, l_b, r_b, c_b)
+        img = construct_image(one = one, zero = zero, l_b = l_b, r_b = r_b, c_b =c_b)
 
         if path_to_folder:
             cv2.imwrite(f'{path_to_folder}/test_{l}+{r}_{c}_{flag}.png', img)

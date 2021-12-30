@@ -1,6 +1,6 @@
 import numpy as np
-from rules import Rules
-from recognizer import Recognizer
+from HW5.rules import Rules
+from HW5.recognizer import Recognizer
 from itertools import product
 
 
