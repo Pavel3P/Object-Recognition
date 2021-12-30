@@ -1,7 +1,7 @@
 import numpy as np
 from rules import Rules
 from recognizer import Recognizer
-from tqdm import trange
+from itertools import product
 
 
 class CYK:
@@ -26,26 +26,22 @@ class CYK:
                  min_w: int = 1,
                  window_size_h_step: int = 1,
                  window_size_w_step: int = 1) -> bool:
-        self.__f = self.__init_f(image, min_h, min_w)
+        self.__f = self.__init_f(image, w_step, h_step, min_h, min_w, window_size_h_step, window_size_w_step)
 
-        H = np.vectorize(lambda _img, _label: self.H(_img, _label, image.shape), signature="(m,n)->()", excluded=[1, "_label"])
-        V = np.vectorize(lambda _img, _label: self.V(_img, _label, image.shape), signature="(m,n)->()", excluded=[1, "_label"])
+        H = np.vectorize(lambda _img, _label: self.H(_img, _label, image.shape, min_w, window_size_w_step),
+                         signature="(m,n)->()", excluded=[1, "_label"])
+        V = np.vectorize(lambda _img, _label: self.V(_img, _label, image.shape, min_h, window_size_h_step),
+                         signature="(m,n)->()", excluded=[1, "_label"])
         R = np.vectorize(lambda _img, _label: self.R(_img, _label, image.shape), signature="(m,n)->()", excluded=[1, "_label"])
 
         indexes = np.arange(np.product(image.shape)).reshape(image.shape)
-        for h in range(min_h, image.shape[0]+1, window_size_h_step):
-            for w in range(min_w, image.shape[1]+1, window_size_w_step):
-                sl_windows = self.sliding_window(indexes, w, h, w_step, h_step)
-                sl_windows = sl_windows.reshape((sl_windows.shape[0] * sl_windows.shape[1],
-                                                 sl_windows.shape[2], sl_windows.shape[3]))
-                for label in self.nonterminal:
-                    bool_h = H(sl_windows, label)
-                    bool_v = V(sl_windows, label)
-                    bool_r = R(sl_windows, label)
-                    for window in sl_windows[bool_h | bool_v | bool_r]:
-                        minimal_h, maximal_h, minimal_w, maximal_w = self.__coords_from_idxs(window, image.shape)
-
-                        self.__f.append((minimal_h, maximal_h, minimal_w, maximal_w, label))
+        for h, w in product(range(min_h, image.shape[0]+1, window_size_h_step), range(min_w, image.shape[1]+1, window_size_w_step)):
+            sl_windows = self.sliding_window(indexes, w, h, w_step, h_step)
+            sl_windows = sl_windows.reshape((sl_windows.shape[0] * sl_windows.shape[1],
+                                             sl_windows.shape[2], sl_windows.shape[3]))
+            for label in self.nonterminal:
+                for window in sl_windows[H(sl_windows, label) | V(sl_windows, label) | R(sl_windows, label)]:
+                    self.__f.append(self.__coords_from_idxs(window, image.shape) + (label,))
 
         return self.f(0, image.shape[0]-1, 0, image.shape[1]-1, self.image_symbol)
 
@@ -64,6 +60,8 @@ class CYK:
 
     def __init_f(self,
                  image: np.ndarray,
+                 w_step: int = 1,
+                 h_step: int = 1,
                  min_h: int = 1,
                  min_w: int = 1,
                  window_size_h_step: int = 1,
@@ -76,16 +74,13 @@ class CYK:
         q = np.vectorize(lambda _window, _label: self.recognizer.recognize(flatten_image[_window.flatten()].reshape(_window.shape), _label),
                          signature="(m,n)->()", excluded=[1, "_label"])
 
-        for h in range(min_h, image.shape[0]+1, window_size_h_step):
-            for w in range(min_w, image.shape[1]+1, window_size_w_step):
-                sl_windows = self.sliding_window(indexes, w, h)
-                sl_windows = sl_windows.reshape((sl_windows.shape[0] * sl_windows.shape[1],
-                                                 sl_windows.shape[2], sl_windows.shape[3]))
-                for label in self.terminal:
-                    for window in sl_windows[q(sl_windows, label)]:
-                        min_h, max_h, min_w, max_w = self.__coords_from_idxs(window, image.shape)
-
-                        f.append((min_h, max_h, min_w, max_w, label))
+        for h, w in product(range(min_h, image.shape[0]+1, window_size_h_step), range(min_w, image.shape[1]+1, window_size_w_step)):
+            sl_windows = self.sliding_window(indexes, w, h, w_step, h_step)
+            sl_windows = sl_windows.reshape((sl_windows.shape[0] * sl_windows.shape[1],
+                                             sl_windows.shape[2], sl_windows.shape[3]))
+            for label in self.terminal:
+                for window in sl_windows[q(sl_windows, label)]:
+                    f.append(self.__coords_from_idxs(window, image.shape) + (label, ))
 
         return f
 
@@ -103,37 +98,35 @@ class CYK:
 
         return min_h, max_h, min_w, max_w
 
-    def H(self, idx_img: np.ndarray, label: str, image_shape: tuple[int, int]) -> bool:
-        for w in range(1, idx_img.shape[1]):
+    def H(self, idx_img: np.ndarray, label: str, image_shape: tuple[int, int], min_w: int = 1, w_step: int = 1) -> bool:
+        for w in range(min_w, idx_img.shape[1], w_step):
             left_part = idx_img[:, :w]
             lmin_h, lmax_h, lmin_w, lmax_w = self.__coords_from_idxs(left_part, image_shape)
 
             right_part = idx_img[:, w:]
             rmin_h, rmax_h, rmin_w, rmax_w = self.__coords_from_idxs(right_part, image_shape)
 
-            for nl in self.nonterminal + self.terminal:
-                for nr in self.nonterminal + self.terminal:
-                    if self.f(lmin_h, lmax_h, lmin_w, lmax_w, nl) \
-                            and self.rules.gh(label, nl, nr) \
-                            and self.f(rmin_h, rmax_h, rmin_w, rmax_w, nr):
-                        return True
+            for nl, nr in product(self.nonterminal + self.terminal, self.nonterminal + self.terminal):
+                if self.f(lmin_h, lmax_h, lmin_w, lmax_w, nl) \
+                        and self.rules.gh(label, nl, nr) \
+                        and self.f(rmin_h, rmax_h, rmin_w, rmax_w, nr):
+                    return True
 
         return False
 
-    def V(self, idx_img: np.ndarray, label: str, image_shape: tuple[int, int]) -> bool:
-        for h in range(1, idx_img.shape[0]):
+    def V(self, idx_img: np.ndarray, label: str, image_shape: tuple[int, int], min_h: int = 1, h_step: int = 1) -> bool:
+        for h in range(min_h, idx_img.shape[0], h_step):
             upper_part = idx_img[:h, :]
             umin_h, umax_h, umin_w, umax_w = self.__coords_from_idxs(upper_part, image_shape)
 
             down_part = idx_img[h:, :]
             dmin_h, dmax_h, dmin_w, dmax_w = self.__coords_from_idxs(down_part, image_shape)
 
-            for nu in self.nonterminal + self.terminal:
-                for nd in self.nonterminal + self.terminal:
-                    if self.f(umin_h, umax_h, umin_w, umax_w, nu) \
-                            and self.rules.gv(label, nu, nd) \
-                            and self.f(dmin_h, dmax_h, dmin_w, dmax_w, nd):
-                        return True
+            for nu, nd in product(self.nonterminal + self.terminal, self.nonterminal + self.terminal):
+                if self.f(umin_h, umax_h, umin_w, umax_w, nu) \
+                        and self.rules.gv(label, nu, nd) \
+                        and self.f(dmin_h, dmax_h, dmin_w, dmax_w, nd):
+                    return True
 
         return False
 
