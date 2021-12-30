@@ -1,2 +1,2 @@
 # Object-Recognition
-Repository with labs from Object Recognition classes of fall 2021, that were read in IPT department, KPI, Ukraine.
+Repository with labs of Object Recognition classes of fall 2021, that were read at IPT department, KPI, Ukraine.

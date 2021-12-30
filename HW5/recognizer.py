@@ -7,12 +7,12 @@ class Recognizer:
         self.method = method
 
         if self.method == "simple":
-            self.samples: dict[Union[int, str]: np.ndarray] = kwargs["samples"]
+            self.samples: dict[str: np.ndarray] = kwargs["samples"]
             self.recognize: callable = self.__recognize_simple
         else:
             raise NotImplementedError
 
-    def __recognize_simple(self, image: np.ndarray, label: int) -> bool:
+    def __recognize_simple(self, image: np.ndarray, label: str) -> bool:
         if label not in self.samples.keys():
             return False
         elif image.shape != self.samples[label].shape:

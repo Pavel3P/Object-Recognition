@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 
 
-def _construct_image(one: np.ndarray, zero: np.ndarray, l_b, r_b ,c_b):
+def construct_image(one: np.ndarray, zero: np.ndarray, l_b, r_b ,c_b):
     digits = {'1': one, '0': zero}
 
     return cv2.vconcat([
@@ -48,9 +48,9 @@ def generate_test_samples(
         l_b = '0'*( len(c_b) - len(l_b) ) + l_b
         r_b = '0'*( len(c_b) - len(r_b) ) + r_b
 
-        assert len(l_b) == len(r_b)== len(c_b)
+        assert len(l_b) == len(r_b) == len(c_b)
 
-        img = _construct_image(one, zero, l_b, r_b, c_b)
+        img = construct_image(one, zero, l_b, r_b, c_b)
 
         if path_to_folder:
             cv2.imwrite(f'{path_to_folder}/test_{l}+{r}_{c}_{flag}.png', img)
