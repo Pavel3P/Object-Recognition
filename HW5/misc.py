@@ -58,5 +58,3 @@ def generate_test_samples(
         gen_result[(n, flag)] = img
 
     return gen_result        
-
-
