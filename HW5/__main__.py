@@ -1,9 +1,7 @@
 import cv2
 
-from rules import Rules
 from misc import construct_image
-from recognizer import Recognizer
-from cyk import CYK
+from cyk import CYK, Recognizer, Rules
 from sys import argv
 from time import time
 from rules_variables import (horizontal,
@@ -22,8 +20,8 @@ if __name__ == "__main__":
         path_to_zero = argv[4]
         path_to_one = argv[5]
     else:
-        path_to_zero = "terminal_symbols/0_w7-h8.png"
-        path_to_one = "terminal_symbols/1_w7-h8.png"
+        path_to_zero = argv[0] + "/terminal_symbols/0_w7-h8.png"
+        path_to_one = argv[0] + "/terminal_symbols/1_w7-h8.png"
 
     zero_sample = cv2.imread(path_to_zero, cv2.IMREAD_GRAYSCALE)
     one_sample = cv2.imread(path_to_one, cv2.IMREAD_GRAYSCALE)
