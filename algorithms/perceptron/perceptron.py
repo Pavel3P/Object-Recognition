@@ -1,6 +1,5 @@
 import numpy as np
 from itertools import product
-from sklearn.metrics import accuracy_score
 
 
 class NormalPerceptron:

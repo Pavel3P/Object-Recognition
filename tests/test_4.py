@@ -1,10 +1,10 @@
 import unittest
 import time
-from HW4.composer import Composer
-from HW4.misc import preprocess, save_img
+from algorithms.csp.composer import Composer
+from algorithms.csp.misc import preprocess, save_img
 
 
-test_dir = 'HW4/data/'
+test_dir = '../data/masks/'
 imgs, masks = preprocess(test_dir)
 
 

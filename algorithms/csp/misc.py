@@ -9,9 +9,9 @@ def preprocess(path_to_folder: str) -> tuple[list[np.ndarray], list[np.ndarray]]
     masks_links = []
     for f in os.listdir(path_to_folder):
         f = path_to_folder + f
-        if 'image' in f:
+        if 'image_' in f:
             imgs_links.append(f)
-        elif 'mask' in f:
+        elif 'mask_' in f:
             masks_links.append(f)
     imgs_links.sort()
     masks_links.sort()
