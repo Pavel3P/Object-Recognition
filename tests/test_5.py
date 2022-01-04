@@ -46,8 +46,8 @@ rename = [
 terminal = ["0", "1"]
 nonterminal = ["A00", "A01", "A10", "A11", "v0", "v1", "v0_", "v1_", "i", "i_"]
 
-path_to_zero = "../data/cyk/0_w7-h8.png"
-path_to_one = "../data/cyk/1_w7-h8.png"
+path_to_zero = "data/cyk/0_w7-h8.png"
+path_to_one = "data/cyk/1_w7-h8.png"
 
 zero_sample = cv2.imread(path_to_zero, cv2.IMREAD_GRAYSCALE)
 one_sample = cv2.imread(path_to_one, cv2.IMREAD_GRAYSCALE)

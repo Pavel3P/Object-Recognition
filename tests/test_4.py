@@ -4,7 +4,7 @@ from algorithms.csp.composer import Composer
 from algorithms.csp.misc import preprocess, save_img
 
 
-test_dir = '../data/masks/'
+test_dir = 'data/masks/'
 imgs, masks = preprocess(test_dir)
 
 
