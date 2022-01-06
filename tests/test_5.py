@@ -1,6 +1,16 @@
 import unittest
 import cv2
-from algorithms.cyk import Rules, CYK, Recognizer, generate_test_samples
+from algorithms.cyk import CYK, generate_test_samples
+import numpy as np
+
+
+def recognizer(image: np.ndarray, label: str, samples: dict[str: np.ndarray]) -> bool:
+    if label not in samples.keys():
+        return False
+    elif image.shape != samples[label].shape:
+        return False
+    else:
+        return np.all(image == samples[label])
 
 
 horizontal = [
@@ -57,19 +67,7 @@ samples = {
         "1": one_sample
     }
 
-rules = Rules()
-
-for h in horizontal:
-    rules.create_gh(*h)
-
-for v in vertical:
-    rules.create_gv(*v)
-
-for r in rename:
-    rules.create_g(*r)
-
-recognizer = Recognizer(samples=samples)
-cyk = CYK(rules, recognizer, terminal, nonterminal, "i")
+cyk = CYK(lambda img, l: recognizer(img, l, samples), terminal, nonterminal, "i", horizontal, vertical, rename)
 height = zero_sample.shape[0]
 width = zero_sample.shape[1]
 

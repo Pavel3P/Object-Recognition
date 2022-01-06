@@ -1,7 +1,17 @@
 import cv2
-from algorithms.cyk import CYK, Recognizer, Rules
+from algorithms.cyk import CYK
 from sys import argv
 from time import time
+import numpy as np
+
+
+def recognizer(image: np.ndarray, label: str, samples: dict[str: np.ndarray]) -> bool:
+    if label not in samples.keys():
+        return False
+    elif image.shape != samples[label].shape:
+        return False
+    else:
+        return np.all(image == samples[label])
 
 
 horizontal = [
@@ -54,10 +64,10 @@ if __name__ == "__main__":
         path_to_zero = argv[2]
         path_to_one = argv[3]
     else:
-        # path_to_zero = "./data/cyk/0_w7-h8.png"
-        # path_to_one = "./data/cyk/1_w7-h8.png"
-        # image_to_check = "./data/cyk/example.png"
-        raise ValueError("Input is empty.")
+        path_to_zero = "./data/cyk/0_w7-h8.png"
+        path_to_one = "./data/cyk/1_w7-h8.png"
+        image_to_check = "./data/cyk/example.png"
+        # raise ValueError("Input is empty.")
 
     image = cv2.imread(image_to_check, cv2.IMREAD_GRAYSCALE)
     zero_sample = cv2.imread(path_to_zero, cv2.IMREAD_GRAYSCALE)
@@ -67,19 +77,7 @@ if __name__ == "__main__":
         "1": one_sample
     }
 
-    rules = Rules()
-
-    for h in horizontal:
-        rules.create_gh(*h)
-
-    for v in vertical:
-        rules.create_gv(*v)
-
-    for r in rename:
-        rules.create_g(*r)
-
-    recognizer = Recognizer(samples=samples)
-    cyk = CYK(rules, recognizer, terminal, nonterminal, "i")
+    cyk = CYK(lambda img, l: recognizer(img, l, samples), terminal, nonterminal, "i", horizontal, vertical, rename)
 
     height = zero_sample.shape[0]
     width = zero_sample.shape[1]

@@ -1,21 +1,23 @@
 import numpy as np
-from algorithms.cyk.rules import Rules
-from algorithms.cyk.recognizer import Recognizer
 
 
 class CYK:
     def __init__(self,
-                 rules: Rules,
-                 recognizer: Recognizer,
+                 recognizer: callable,
                  terminal: list[str],
                  nonterminal: list[str],
-                 image_symbol: str) -> None:
-        self.rules = rules
+                 image_symbol: str,
+                 horizontal_rules: list[tuple[str, str, str]],
+                 vertical_rules: list[tuple[str, str, str]],
+                 replace_rules: list[tuple[str, str]]) -> None:
         self.recognizer = recognizer
         self.terminal = terminal
         self.nonterminal = nonterminal
         self.image_symbol = image_symbol
         self._f: list[tuple[int, int, str]] = []
+        self.horizontal_rules: list[tuple[str, str, str]] = horizontal_rules
+        self.vertical_rules: list[tuple[str, str, str]] = vertical_rules
+        self.replace_rules: list[tuple[str, str]] = replace_rules
 
     def __call__(self,
                  image: np.ndarray,
@@ -74,7 +76,7 @@ class CYK:
                                                  sl_windows.shape[2], sl_windows.shape[3]))
                 for label in self.terminal:
                     for window in sl_windows:
-                        if self.recognizer.recognize(flatten_image[window.flatten()].reshape(window.shape), label):
+                        if self.recognizer(flatten_image[window.flatten()].reshape(window.shape), label):
                             f.append((window[0, 0], window[-1, -1], label))
 
         return f
@@ -86,7 +88,7 @@ class CYK:
             for nl in self.nonterminal + self.terminal:
                 for nr in self.nonterminal + self.terminal:
                     if (left_part[0, 0], left_part[-1, -1], nl) in self._f \
-                            and self.rules.gh(label, nl, nr) \
+                            and ((label, nl, nr) in self.horizontal_rules) \
                             and (right_part[0, 0], right_part[-1, -1], nr) in self._f:
                         return True
 
@@ -99,7 +101,7 @@ class CYK:
             for nu in self.nonterminal + self.terminal:
                 for nd in self.nonterminal + self.terminal:
                     if (upper_part[0, 0], upper_part[-1, -1], nu) in self._f \
-                            and self.rules.gv(label, nu, nd) \
+                            and ((label, nu, nd) in self.vertical_rules) \
                             and (down_part[0, 0], down_part[-1, -1], nd) in self._f:
                         return True
 
@@ -107,7 +109,19 @@ class CYK:
 
     def R(self, idx_img: np.ndarray, label: str) -> bool:
         for t in self.terminal + self.nonterminal:
-            if (idx_img[0, 0], idx_img[-1, -1], t) in self._f and self.rules.g(label, t):
+            if (idx_img[0, 0], idx_img[-1, -1], t) in self._f and ((label, t) in self.replace_rules):
                 return True
 
         return False
+
+    def __parse_rules(self, rules: str) -> None:
+        raise NotImplementedError
+
+    def create_gh(self, left_symbol: str, right_s1: str, right_s2: str) -> None:
+        self.horizontal_rules.append((left_symbol, right_s1, right_s2))
+
+    def create_gv(self, left_symbol: str, right_s1: str, right_s2: str) -> None:
+        self.vertical_rules.append((left_symbol, right_s1, right_s2))
+
+    def create_g(self, s1: str, s2: str) -> None:
+        self.replace_rules.append((s1, s2))
